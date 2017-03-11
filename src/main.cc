@@ -19,17 +19,15 @@ int main(int argc, char** argv){
 	std::cout << std::endl << std::endl;
 
 	board->print();
-	std::cout << "                        " << std::endl;
-	std::cout << "     A  B  C  D  E  F   " << std::endl;
 	std::cout << std::endl;
 	while(1){
 		std::cout << "Enter a move" << std::endl;
 		std::string move;
 		std::cin >> move;
 		std::cout << std::endl;
-		k1->setPosition(1,4);
+		board->moveParser(move);
 		board->print();
-		std::cout << std::endl << move << std::endl << std::endl;	
+		std::cout << std::endl;
 	}
 
 }

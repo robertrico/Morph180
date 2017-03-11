@@ -32,6 +32,8 @@ void Morph::Board::print(){
 	}
 
 	std::cout << "\033[0m";
+	std::cout << "                        " << std::endl;
+	std::cout << "     A  B  C  D  E  F   " << std::endl;
 }
 
 char Morph::Board::getPieceChar(int x, int y){
@@ -53,6 +55,18 @@ Morph::Piece* Morph::Board::getPiece(int x){
 	return this->active_pieces.at(x);
 }
 
+Morph::Piece* Morph::Board::getPiece(int x, int y){
+	std::vector<Morph::Piece*>::iterator it;
+
+	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
+		if((*it)->getPosition()[0] == x && (*it)->getPosition()[1] == y){
+			return (*it);
+		}
+	}
+
+	return NULL;
+}
+
 bool Morph::Board::isEmpty(int x, int y){
 	std::vector<Morph::Piece*>::iterator it;
 
@@ -72,6 +86,51 @@ void Morph::Board::getNextMove(){
 		(*it)->getMoves();
 	}
 
+}
+
+void Morph::Board::moveParser(std::string move){
+	std::vector<int> m;
+	m.push_back(1);
+
+	int one,two,three,four;
+	one = this->letterParser(move[0]);
+	two = move[1] - '0';
+	three = this->letterParser(move[2]);
+	four = move[3] - '0';
+
+	if(one == 0 || three == 0 || two > 8 || four > 8){
+		std::cout << "\033[1m\033[031m";
+		std::cout << "Please Enter a valid move" << std::endl;
+		std::cout << "\033[0m" << std::endl;
+	}else if(this->isEmpty(two,one)){
+		std::cout << "\033[1m\033[031m";
+		std::cout << "No Piece Exists in that space to move from" << std::endl;
+		std::cout << "\033[0m" << std::endl;
+	}else if(this->isEmpty(four,three)){
+		this->getPiece(two,one)->setPosition(four,three);
+	}
+}
+
+int Morph::Board::letterParser(char letter){
+	if(letter == 'A' || letter == 'a'){
+		return 1;
+	}
+	if(letter == 'B' || letter == 'b'){
+		return 2;
+	}
+	if(letter == 'C' || letter == 'c'){
+		return 3;
+	}
+	if(letter == 'D' || letter == 'd'){
+		return 4;
+	}
+	if(letter == 'E' || letter == 'e'){
+		return 5;
+	}
+	if(letter == 'F' || letter == 'f'){
+		return 6;
+	}
+	return 0;
 }
 
 //Piece
@@ -116,7 +175,7 @@ char Morph::Pawn::getChar(){
 
 //Piece -- King
 void Morph::King::getMoves(){
-	
+	std::cout << "King Get Move" << std::endl;
 }
 
 char Morph::King::getChar(){

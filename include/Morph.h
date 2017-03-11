@@ -28,8 +28,11 @@ namespace Morph{
 			void getNextMove();
 			void addPiece(Morph::Piece *piece);
 			char getPieceChar(int x,int y);
-			Morph::Piece* getPiece(int x);
+			Morph::Piece *getPiece(int x);
+			Morph::Piece *getPiece(int x,int y);
 			bool isEmpty(int x, int y);
+			void moveParser(std::string move);
+			int letterParser(char letter);
 	};
 
 
