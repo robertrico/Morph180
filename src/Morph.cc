@@ -211,17 +211,14 @@ char Morph::Pawn::getChar(){
 void Morph::King::getMoves(){
 	if(!isPlayer()){
 		int *current = this->getPosition();
-		this->setPosition(current[0],current[1]+1);
+		if(this->validMove(current[0],current[1]+1)){
+			this->setPosition(current[0],current[1]+1);
+		}
 	}
 }
 
 bool Morph::King::validMove(int x, int y){
 	int *current = this->getPosition();
-
-	std::cout << "Cur 0:" <<current[0] << std::endl;
-	std::cout << "Cur 1:" <<current[1] << std::endl;
-
-	std::cout << x << " " << y << std::endl;
 
 	if(this->isPlayer() && (y > 1 || current[1] - x > 1 || x > current[1])){
 		return false;
