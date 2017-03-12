@@ -8,13 +8,16 @@ int main(int argc, char** argv){
 	board->init();
 
 	//Morph::Bishop *b1 = new Morph::Bishop(6,6);
-	Morph::King *k1 = new Morph::King(1,5);
+	Morph::King *k1 = new Morph::King(1,5,true);
+
+	Morph::King *k2 = new Morph::King(8,2,false);
+
 	//board->addPiece(b1);
 	board->addPiece(k1);
+	board->addPiece(k2);
 
 	//testIsEmpty(board);
 
-	board->getNextMove();
 
 	std::cout << std::endl << std::endl;
 
@@ -25,7 +28,10 @@ int main(int argc, char** argv){
 		std::string move;
 		std::cin >> move;
 		std::cout << std::endl;
-		board->moveParser(move);
+		if(board->moveParser(move)){
+			board->getNextMove();
+		}
+
 		board->print();
 		std::cout << std::endl;
 	}
