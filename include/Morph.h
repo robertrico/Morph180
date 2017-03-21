@@ -1,6 +1,9 @@
 #include "main.h"
+#include <algorithm>
 
 namespace Morph{
+
+	class Board;
 
 	class Piece{
 		public:
@@ -11,14 +14,18 @@ namespace Morph{
 			}
 			virtual ~Piece(){}
 			virtual void getMoves() = 0;
+			void showMoves();
+			void addMove(int x, int y);
 			virtual bool validMove(int x, int y) = 0;
 			virtual char getChar() = 0;
 			int* getPosition();
 			bool isPlayer();
 			void setPosition(int x, int y);
+			Morph::Board *board;
 		private:
 			bool is_player;
 			int position[2];
+			std::vector<int*> moves;
 			
 	};
 
@@ -30,6 +37,7 @@ namespace Morph{
 			void init();
 			void print();
 			void getNextMove();
+			void execute();
 			void addPiece(Morph::Piece *piece);
 			char getPieceChar(int x,int y);
 			Morph::Piece *getPiece(int x);
@@ -37,6 +45,7 @@ namespace Morph{
 			bool isEmpty(int x, int y);
 			bool moveParser(std::string move);
 			int letterParser(char letter);
+			bool capturablePiece(int x, int y);
 	};
 
 

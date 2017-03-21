@@ -48,6 +48,7 @@ char Morph::Board::getPieceChar(int x, int y){
 }
 
 void Morph::Board::addPiece(Morph::Piece *piece){
+	piece->board = this;
 	this->active_pieces.push_back(piece);
 }
 
@@ -80,12 +81,22 @@ bool Morph::Board::isEmpty(int x, int y){
 }
 
 void Morph::Board::getNextMove(){
+	std::random_shuffle(active_pieces.begin(), active_pieces.end());
 	std::vector<Morph::Piece*>::iterator it;
 
 	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
-		(*it)->getMoves();
+		if(!(*it)->isPlayer()){
+			(*it)->getMoves();
+		}
 	}
 
+}
+void Morph::Board::execute(){
+	std::vector<Morph::Piece*>::iterator it;
+
+	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
+		(*it)->showMoves();
+	}
 }
 
 bool Morph::Board::moveParser(std::string move){
@@ -102,6 +113,12 @@ bool Morph::Board::moveParser(std::string move){
 		std::cout << "\033[0m" << std::endl;
 	}else{
 		Morph::Piece *current = this->getPiece(two,one);
+		if(!current->isPlayer()){
+			std::cout << "\033[1m\033[031m";
+			std::cout << "This isn't your piece to move!" << std::endl;
+			std::cout << "\033[0m" << std::endl;
+			return false;
+		}
 		if((one == 0 || three == 0 || two > 8 || four > 8) || !current->validMove(three,four)){
 			std::cout << "\033[1m\033[031m";
 			std::cout << "Please Enter a valid move" << std::endl;
@@ -137,6 +154,14 @@ int Morph::Board::letterParser(char letter){
 	return 0;
 }
 
+bool Morph::Board::capturablePiece(int x, int y){
+	if(this->isEmpty(x,y)){
+		return false;
+	}else{
+		return this->getPiece(x,y)->isPlayer();
+	}
+}
+
 //Piece
 
 void Morph::Piece::setPosition(int x, int y){
@@ -150,6 +175,25 @@ int* Morph::Piece::getPosition(){
 
 bool Morph::Piece::isPlayer(){
 	return this->is_player;
+}
+
+void Morph::Piece::addMove(int x, int y){
+	int* moves = new int[2];
+	moves[0] = x;
+	moves[1] = y;
+	this->moves.push_back(moves);
+}
+
+void Morph::Piece::showMoves(){
+	std::vector<int*>::iterator it;
+
+	for(it=this->moves.begin(); it < this->moves.end(); it++){
+		int x = *(*it);
+		int y = *(*it+1);
+		int *current = this->getPosition();
+		std::cout << "Valid Moves: " << current[0]+x << "{}" << current[1]+y << std::endl;
+	}
+
 }
 
 //Piece -- Bishop
@@ -182,10 +226,59 @@ char Morph::Rook::getChar(){
 }
 //Piece -- Knight
 void Morph::Knight::getMoves(){
-	std::cout << "Knight Get Move" << std::endl;
+	int *current = this->getPosition();
+
+	if(this->validMove(current[0]-2,current[1]+1)){
+		this->addMove(-2,1);
+	}
+	if(this->validMove(current[0]-2,current[1]-1)){
+		this->addMove(-2,-1);
+	}
+	if(this->validMove(current[0]-1,current[1]-2)){
+		this->addMove(-1,-2);
+	}
+	if(this->validMove(current[0]-1,current[1]+2)){
+		this->addMove(-1,2);
+	}
+	if(this->validMove(current[0]+1,current[1]+2) && this->board->capturablePiece(current[0]+1,current[1]+2)){
+		this->addMove(1,2);
+	}
+	if(this->validMove(current[0]+1,current[1]-2) && this->board->capturablePiece(current[0]+1,current[1]-2)){
+		this->addMove(1,-2);
+	}
+	if(this->validMove(current[0]+2,current[1]-1) && this->board->capturablePiece(current[0]+2,current[1]-1)){
+		this->addMove(2,-1);
+	}
+	if(this->validMove(current[0]+2,current[1]+1) && this->board->capturablePiece(current[0]+2,current[1]+1)){
+		this->addMove(2,1);
+	}
 }
 bool Morph::Knight::validMove(int x, int y){
-	return true;
+	if(this->isPlayer()){
+		int *current = this->getPosition();
+		int movex = current[1] -  x;
+		int movey = current[0] - y;
+		if( (movey == -2 && movex ==  1) ||
+			(movey == -2 && movex == -1) ||
+			(movey == -1 && movex == -2) ||
+			(movey == -1 && movex ==  2) ||
+			(movey ==  1 && movex ==  2) ||
+			(movey ==  1 && movex == -2) ||
+			(movey ==  2 && movex == -1) ||
+			(movey ==  2 && movex ==  1)){
+			return true;
+		}else{
+			return false;
+		}
+	}else{
+		if(x > 8 || x < 1){
+			return false;
+		}
+		if(y > 6 || y < 1){
+			return false;
+		}
+		return true;
+	}
 }
 char Morph::Knight::getChar(){
 	if(isPlayer()){
@@ -198,6 +291,13 @@ void Morph::Pawn::getMoves(){
 	std::cout << "Pawn Get Move" << std::endl;
 }
 bool Morph::Pawn::validMove(int x, int y){
+	int *current = this->getPosition();
+	if(x != current[1]){
+		return false;
+	}
+	if(y - current[0] > 1){
+		return false;
+	}
 	return true;
 }
 char Morph::Pawn::getChar(){
@@ -212,7 +312,7 @@ void Morph::King::getMoves(){
 	if(!isPlayer()){
 		int *current = this->getPosition();
 		if(this->validMove(current[0],current[1]+1)){
-			this->setPosition(current[0],current[1]+1);
+			this->addMove(0,1);
 		}
 	}
 }
