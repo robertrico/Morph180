@@ -12,12 +12,23 @@ namespace Morph{
 				this->position[1] = y;
 				this->is_player = is_player;
 			}
-			virtual ~Piece(){}
+			virtual ~Piece(){
+				std::vector<int*>::iterator it;
+				for(it=this->moves.begin(); it < this->moves.end(); it++){
+					delete *it;
+				}
+				for(it=this->moves.begin(); it < this->moves.end(); it++){
+					delete *it;
+				}
+
+			}
+			void freeze();
+			void revert();
 			virtual void getMoves() = 0;
+			virtual char getChar() = 0;
 			void showMoves();
 			void addMove(int x, int y);
 			virtual bool validMove(int x, int y) = 0;
-			virtual char getChar() = 0;
 			int* getPosition();
 			bool isPlayer();
 			void setPosition(int x, int y);
@@ -26,6 +37,7 @@ namespace Morph{
 			bool is_player;
 			int position[2];
 			std::vector<int*> moves;
+			std::vector<int*> states;
 			
 	};
 
@@ -39,6 +51,7 @@ namespace Morph{
 			void getNextMove();
 			void execute();
 			void addPiece(Morph::Piece *piece);
+			void replacePiece(int x, Morph::Piece* piece);
 			char getPieceChar(int x,int y);
 			Morph::Piece *getPiece(int x);
 			Morph::Piece *getPiece(int x,int y);
