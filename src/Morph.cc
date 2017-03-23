@@ -316,12 +316,64 @@ bool Morph::Bishop::validMove(int x, int y){
 		}
 	}else{
 		int *current = this->getPosition();
-		if(y < current[0] && !this->board->capturablePiece(x,y)){
+		if(x < current[0] && !this->board->capturablePiece(x,y)){
 			return false;
 		}
-		int i = current[0];
-		int j = current[1];
-		
+		int i = 0;
+		int j = 0;
+		i += current[1];
+		j += current[0];
+		int count = -1;
+
+		if(x < i && y < j){
+			return this->board->capturablePiece(x,y);
+		}
+
+		i = 0;
+		j = 0;
+		i += current[0];
+		j += current[1];
+		count = 1;
+
+		if(x > i && y > j){
+			while((i < 9 && j < 7)){
+				if(this->board->isEmpty(current[0]+count,current[1]+count)){
+					return false;
+				}
+				i++;
+				j++;
+				count++;
+			}
+		}
+
+		i = 0;
+		j = 0;
+		i += current[1];
+		j += current[0];
+		count = 1;
+
+		if(x < i && y > j){
+			return this->board->capturablePiece(x,y);
+		}
+
+		i = 0;
+		j = 0;
+		i += current[1];
+		j += current[0];
+		count = 1;
+
+		if(x > i && y < j){
+			while((i > 0 && j < 7)){
+				if(this->board->isEmpty(current[0]-count,current[1]+count)){
+					return false;
+				}
+				i--;
+				j++;
+				count++;
+			}
+		}
+
+
 	}
 
 	return true;
@@ -336,7 +388,65 @@ char Morph::Bishop::getChar(){
 
 //Piece -- Rook
 void Morph::Rook::getMoves(){
-	std::cout << "Rook Get Move" << std::endl;
+	int *current = this->getPosition();
+	int j = 0;
+	int i = 0;
+	j += current[0];
+	i += current[1];
+	int count = j-1;
+
+	while(count > 0){
+		if(this->board->capturablePiece(count,i)){
+			this->addMove(count-j,0);
+			break;
+		}
+		if(!this->board->isEmpty(count,i)){
+			break;
+		}
+		if(this->board->isEmpty(count,i)){
+			this->addMove(count-j,0);
+		}
+		count--;
+	} 
+
+	count = i-1;
+	while(count > 0){
+		if(this->board->capturablePiece(j,count)){
+			this->addMove(0,count-i);
+			break;
+		}
+		if(!this->board->isEmpty(count,i)){
+			break;
+		}
+		if(this->board->isEmpty(j,count)){
+			this->addMove(0,count-i);
+		}
+		count--;
+	} 
+
+	count = i+1;
+	while(count < 7){
+		if(this->board->capturablePiece(j,count)){
+			this->addMove(0,count-i);
+			break;
+		}
+		if(!this->board->isEmpty(count,i)){
+			break;
+		}
+		if(this->board->isEmpty(j,count)){
+			this->addMove(0,count-i);
+		}
+		count++;
+	} 
+
+	count = j+1;
+	while(count < 9){
+		if(this->board->capturablePiece(count,i)){
+			this->addMove(count-j,0);
+			break;
+		}
+		count++;
+	} 
 }
 bool Morph::Rook::validMove(int x, int y){
 	return true;

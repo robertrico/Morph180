@@ -26,6 +26,11 @@ int main(int argc, char** argv){
 	Morph::Bishop *b3 = new Morph::Bishop(2,2,true);
 	Morph::Bishop *b4 = new Morph::Bishop(2,5,true);
 
+	Morph::Rook *r1 = new Morph::Rook(7,4,false);
+	Morph::Rook *r2 = new Morph::Rook(7,3,false);
+	Morph::Rook *r3 = new Morph::Rook(2,3,true);
+	Morph::Rook *r4 = new Morph::Rook(2,4,true);
+
 	board->addPiece(k1);
 	board->addPiece(k2);
 	board->addPiece(n1);
@@ -40,6 +45,10 @@ int main(int argc, char** argv){
 	board->addPiece(b2);
 	board->addPiece(b3);
 	board->addPiece(b4);
+	board->addPiece(r1);
+	board->addPiece(r2);
+	board->addPiece(r3);
+	board->addPiece(r4);
 
 	std::cout << std::endl << std::endl;
 
