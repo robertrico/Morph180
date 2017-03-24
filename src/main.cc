@@ -7,8 +7,8 @@ int main(int argc, char** argv){
 	Morph::Board *board = new Morph::Board();
 	board->init();
 
+	/*
 	Morph::King *k1 = new Morph::King(1,5,true);
-
 	Morph::King *k2 = new Morph::King(8,2,false);
 
 	Morph::Knight *n1 = new Morph::Knight(7,1,false);
@@ -16,35 +16,40 @@ int main(int argc, char** argv){
 	Morph::Knight *n3 = new Morph::Knight(2,1,true);
 	Morph::Knight *n4 = new Morph::Knight(2,6,true);
 
+	*/
 	Morph::Pawn *p1 = new Morph::Pawn(6,3,false);
-	Morph::Pawn *p2 = new Morph::Pawn(6,4,false);
+	Morph::Pawn *p2 = new Morph::Pawn(1,4,false);
 	Morph::Pawn *p3 = new Morph::Pawn(3,3,true);
 	Morph::Pawn *p4 = new Morph::Pawn(3,4,true);
 
+	/*
 	Morph::Bishop *b1 = new Morph::Bishop(7,2,false);
 	Morph::Bishop *b2 = new Morph::Bishop(7,5,false);
 	Morph::Bishop *b3 = new Morph::Bishop(2,2,true);
 	Morph::Bishop *b4 = new Morph::Bishop(2,5,true);
+	*/
 
 	Morph::Rook *r1 = new Morph::Rook(7,4,false);
 	Morph::Rook *r2 = new Morph::Rook(7,3,false);
 	Morph::Rook *r3 = new Morph::Rook(2,3,true);
 	Morph::Rook *r4 = new Morph::Rook(2,4,true);
 
+	board->addPiece(p1);
+	board->addPiece(p2);
+	board->addPiece(p3);
+	board->addPiece(p4);
+	/*
 	board->addPiece(k1);
 	board->addPiece(k2);
 	board->addPiece(n1);
 	board->addPiece(n2);
 	board->addPiece(n3);
 	board->addPiece(n4);
-	board->addPiece(p1);
-	board->addPiece(p2);
-	board->addPiece(p3);
-	board->addPiece(p4);
 	board->addPiece(b1);
 	board->addPiece(b2);
 	board->addPiece(b3);
 	board->addPiece(b4);
+	*/
 	board->addPiece(r1);
 	board->addPiece(r2);
 	board->addPiece(r3);

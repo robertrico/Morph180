@@ -306,6 +306,7 @@ void Morph::Bishop::getMoves(){
 		count++;
 	}
 }
+
 bool Morph::Bishop::validMove(int x, int y){
 	if(!this->isPlayer()){
 		if(x < 1 || y < 1){
@@ -316,64 +317,28 @@ bool Morph::Bishop::validMove(int x, int y){
 		}
 	}else{
 		int *current = this->getPosition();
-		if(x < current[0] && !this->board->capturablePiece(x,y)){
-			return false;
-		}
-		int i = 0;
-		int j = 0;
-		i += current[1];
-		j += current[0];
-		int count = -1;
+		int i = current[1];	
+		int j = current[0];	
 
-		if(x < i && y < j){
-			return this->board->capturablePiece(x,y);
-		}
-
-		i = 0;
-		j = 0;
-		i += current[0];
-		j += current[1];
-		count = 1;
-
-		if(x > i && y > j){
-			while((i < 9 && j < 7)){
-				if(this->board->isEmpty(current[0]+count,current[1]+count)){
-					return false;
-				}
+		while(i != x && j != y){
+			if(x > i && y > j){
 				i++;
 				j++;
-				count++;
 			}
-		}
-
-		i = 0;
-		j = 0;
-		i += current[1];
-		j += current[0];
-		count = 1;
-
-		if(x < i && y > j){
-			return this->board->capturablePiece(x,y);
-		}
-
-		i = 0;
-		j = 0;
-		i += current[1];
-		j += current[0];
-		count = 1;
-
-		if(x > i && y < j){
-			while((i > 0 && j < 7)){
-				if(this->board->isEmpty(current[0]-count,current[1]+count)){
-					return false;
-				}
+			if(x < i && y > j){
 				i--;
 				j++;
-				count++;
+			}
+
+			if((x < i && y < j) || (x > i && y < j)){
+				return this->board->capturablePiece(x,y);
+			}
+
+			if(!this->board->isEmpty(j,i)){
+				return false;
 			}
 		}
-
-
+		
 	}
 
 	return true;
@@ -448,15 +413,63 @@ void Morph::Rook::getMoves(){
 		count++;
 	} 
 }
+
 bool Morph::Rook::validMove(int x, int y){
+	int* current = this->getPosition();
+	int i = current[1];
+	int j = current[0];
+	if(x != i && y != j){
+		return false;
+	}
+	if(x < i){
+		while(x != i){
+			i--;
+			if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer()){
+				return false;
+			}
+		}
+		if(this->board->getPiece(j,i)->isPlayer()){
+			return false;
+		}
+	}
+	if(x > i){
+		while(x != i){
+			i++;
+			if(!this->board->isEmpty(j,i)){
+				return false;
+			}
+		}
+	}
+	if(y < j){
+		while(y != j){
+			j--;
+			if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer()){
+				return false;
+			}
+		}
+		if(this->board->getPiece(j,i)->isPlayer()){
+			return false;
+		}
+	}
+	if(y > j){
+		while(y != j){
+			j++;
+			if(!this->board->isEmpty(j,i)){
+				return false;
+			}
+		}
+	}
+
 	return true;
 }
+
 char Morph::Rook::getChar(){
 	if(isPlayer()){
 		return 'r';
 	}
 	return 'R';
 }
+
 //Piece -- Knight
 void Morph::Knight::getMoves(){
 	int *current = this->getPosition();
