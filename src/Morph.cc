@@ -41,9 +41,14 @@ char Morph::Board::getPieceChar(int x, int y){
 
 	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
 		if((*it)->getPosition()[0] == x && (*it)->getPosition()[1] == y){
-			return (*it)->getChar();
+			if((*it)->isRemoved()){
+				return ' ';
+			}else{
+				return (*it)->getChar();
+			}
 		}
 	}
+
 	return ' ';
 }
 
@@ -60,6 +65,18 @@ void Morph::Board::replacePiece(int x, Morph::Piece* piece){
 
 Morph::Piece* Morph::Board::getPiece(int x){
 	return this->active_pieces.at(x);
+}
+
+void Morph::Board::removePiece(int x, int y){
+	std::vector<Morph::Piece*>::iterator it;
+	//Morph::Piece* removed;
+
+	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
+		if((*it)->getPosition()[0] == x && (*it)->getPosition()[1] == y){
+			//this->active_pieces.erase(it);
+		}
+	}
+
 }
 
 Morph::Piece* Morph::Board::getPiece(int x, int y){
@@ -86,23 +103,201 @@ bool Morph::Board::isEmpty(int x, int y){
 	return true;
 }
 
-void Morph::Board::getNextMove(){
-	std::random_shuffle(active_pieces.begin(), active_pieces.end());
+std::vector<struct Morph::Move> Morph::Board::showMoves(){
+
+	std::vector<struct Morph::Move> moves;
+
 	std::vector<Morph::Piece*>::iterator it;
 
 	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
-		if(!(*it)->isPlayer()){
-			(*it)->getMoves();
+		std::vector<int*> piece_moves = (*it)->getMoves();
+		if(piece_moves.size() == 0){
+			continue;
+		}
+
+		std::vector<int*>::iterator mit;
+		for(mit=piece_moves.begin(); mit < piece_moves.end(); mit++){
+			struct Morph::Move move;
+			move.piece = *it;
+			move.moves = *mit;
+			moves.push_back(move);
 		}
 	}
 
+	return moves;
+
 }
+
 void Morph::Board::execute(){
+	double best_score = -9999;
+	Morph::Piece* moved = NULL;
+	int* best_move = new int[2];
+	best_move[0] = 0;
+	best_move[1] = 0;
+
+	int loop = 0;
+
+	std::vector<struct Morph::Move>::iterator mit;
+	std::vector<struct Morph::Move> pmoves = this->showMoves();
+
+	for(mit=pmoves.begin(); mit < pmoves.end(); mit++){
+		if((*mit).piece->isPlayer()){
+			continue;
+		}
+		loop++;
+		int* position = (*mit).piece->getPosition();
+
+		(*mit).piece->freeze();
+		(*mit).piece->setPosition(position[0]+(*mit).moves[0],position[1]+(*mit).moves[1],true);
+		double score = this->min(0);
+		if(score > best_score){
+			moved = (*mit).piece;
+			best_move[0] = position[0];
+			best_move[1] = position[1];
+			best_score = score;
+		}
+		(*mit).piece->revert();
+	}
+
+	if(best_score == 9999912){
+		std::cout << "\033[7;37m";
+		std::cout << " You win!";
+		std::cout << "\033[0m" << std::endl;
+		exit(1);
+	}
+	if(best_score == -9999912){
+		std::cout << "\033[7;37m";
+		std::cout << " I win!";
+		std::cout << "\033[0m" << std::endl;
+		exit(1);
+	}
+
+	std::cout << "I moved " << best_move[0] << " " << best_move[1] << std::endl;
+	std::cout << "With Score " << best_score << std::endl;
+	std::cout << "and used "<< loop << " loops" << std::endl;
+
+	moved->setPosition(best_move[0],best_move[1],false);
+	delete[] best_move;
+}
+
+double Morph::Board::max(int depth){
+	if(endEval()){
+		return -9999912;
+	}else if(depth == MAXDEPTH){
+		return eval();
+	}else{
+		double best_score = -9999;
+		//Morph::Piece* moved = NULL;
+		int* best_move = new int[2];
+		best_move[0] = 0;
+		best_move[1] = 0;
+
+		std::vector<struct Morph::Move>::iterator mit;
+		std::vector<struct Morph::Move> pmoves = this->showMoves();
+
+		for(mit=pmoves.begin(); mit < pmoves.end(); mit++){
+			int* position = (*mit).piece->getPosition();
+			if((*mit).piece->isPlayer()){
+				continue;
+			}
+
+			(*mit).piece->freeze();
+			(*mit).piece->setPosition(position[0]+(*mit).moves[0],position[1]+(*mit).moves[1],true);
+			double score = this->min(depth+1);
+			if(score > best_score){
+				best_move[0] = position[0];
+				best_move[1] = position[1];
+				best_score = score;
+			}
+			(*mit).piece->revert();
+		}
+
+		delete[] best_move;
+		return best_score;
+	}
+}
+
+double Morph::Board::min(int depth){
+	if(endEval()){
+		return 9999912;
+	}else if(depth == MAXDEPTH){
+		return eval();
+	}else{
+		double best_score = 9999;
+		//Morph::Piece* moved = NULL;
+		int* best_move = new int[2];
+		best_move[0] = 0;
+		best_move[1] = 0;
+
+		std::vector<struct Morph::Move>::iterator mit;
+		std::vector<struct Morph::Move> pmoves = this->showMoves();
+
+		for(mit=pmoves.begin(); mit < pmoves.end(); mit++){
+			int* position = (*mit).piece->getPosition();
+			if(!(*mit).piece->isPlayer()){
+				continue;
+			}
+
+			(*mit).piece->freeze();
+			(*mit).piece->setPosition(position[0]+(*mit).moves[0],position[1]+(*mit).moves[1],true);
+			double score = this->max(depth+1);
+			if(score < best_score){
+				best_move[0] = position[0];
+				best_move[1] = position[1];
+				best_score = score;
+			}
+			(*mit).piece->revert();
+		}
+
+		delete[] best_move;
+		return best_score;
+	}
+}
+
+bool Morph::Board::endEval(){
 	std::vector<Morph::Piece*>::iterator it;
 
+	int deadAIKing = false;
+	int deadKing = false;
+
 	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
-		(*it)->showMoves();
+		if((*it)->getChar() == 'K' && !(*it)->isRemoved()){
+			deadAIKing = true;
+		}
+		if((*it)->getChar() == 'k' && !(*it)->isRemoved()){
+			deadKing = true;
+		}
 	}
+
+	return (deadKing xor deadAIKing);
+}
+
+int Morph::Board::eval(){
+	std::vector<Morph::Piece*>::iterator it;
+
+	int aiCount = 0;
+	int aiRookCount = 0;
+	int rookCount = 0;
+	int playerCount = 0;
+	int score = 0;
+
+	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
+		if((*it)->isPlayer() && !(*it)->isRemoved()){
+			playerCount++;
+		}else if(!(*it)->isRemoved()){
+			aiCount--;
+		}
+		if((*it)->getChar() == 'r'){
+			rookCount--;
+		}
+		if((*it)->getChar() == 'R'){
+			aiRookCount++;
+		}
+	}
+
+	double evalScore = ((0.95) * aiCount) + ((0.5)*playerCount) + (0.25)*rookCount + (0.85)*aiRookCount;
+
+	return evalScore;
 }
 
 bool Morph::Board::moveParser(std::string move){
@@ -117,6 +312,7 @@ bool Morph::Board::moveParser(std::string move){
 		std::cout << "\033[1m\033[031m";
 		std::cout << "No Piece Exists in that space to move from" << std::endl;
 		std::cout << "\033[0m" << std::endl;
+		return false;
 	}else{
 		Morph::Piece *current = this->getPiece(two,one);
 		if(!current->isPlayer()){
@@ -129,13 +325,27 @@ bool Morph::Board::moveParser(std::string move){
 			std::cout << "\033[1m\033[031m";
 			std::cout << "Please Enter a valid move" << std::endl;
 			std::cout << "\033[0m" << std::endl;
-		}else if(this->isEmpty(four,three)){
-			current->setPosition(four,three);
-			return true;
+			return false;
 		}
+
+		if(this->capturableAIPiece(four,three)){
+
+			std::vector<Morph::Piece*>::iterator it;
+
+			for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
+				int* position = (*it)->getPosition();
+				if(four == position[0] && three == position[1]){
+					this->active_pieces.erase(it);
+				}
+			}
+
+			delete this->getPiece(four,three);
+		}
+
+		current->setPosition(four,three,false);
 	}
 
-	return false;
+	return true;
 }
 
 int Morph::Board::letterParser(char letter){
@@ -160,6 +370,14 @@ int Morph::Board::letterParser(char letter){
 	return 0;
 }
 
+bool Morph::Board::capturableAIPiece(int x, int y){
+	if(this->isEmpty(x,y)){
+		return false;
+	}else{
+		return !this->getPiece(x,y)->isPlayer();
+	}
+}
+
 bool Morph::Board::capturablePiece(int x, int y){
 	if(this->isEmpty(x,y)){
 		return false;
@@ -180,14 +398,40 @@ void Morph::Piece::freeze(){
 }
 
 void Morph::Piece::revert(){
-	int* last = this->states.back();
-	this->setPosition(last[0],last[1]);
-	this->states.pop_back();
-	delete last;
-
+	if(this->states.size() != 0){
+		int* last = this->states.back();
+		this->setPosition(last[0],last[1],true);
+		this->setRemoved(false);
+		delete[] last;
+		this->states.pop_back();
+	}
 }
 
-void Morph::Piece::setPosition(int x, int y){
+void Morph::Piece::setRemoved(bool rem){
+	this->is_removed = rem;
+}
+
+bool Morph::Piece::isRemoved(){
+	return this->is_removed;
+}
+
+void Morph::Piece::setPosition(int x, int y,bool min_max_move){
+	if(!this->board->isEmpty(x,y)){
+		if(this->isPlayer()){
+			if(this->isPlayer() != this->board->getPiece(x,y)->isPlayer()){
+				this->board->removePiece(x,y);
+			}
+		}else if(!min_max_move){
+			if(this->isPlayer() != this->board->getPiece(x,y)->isPlayer()){
+				this->board->removePiece(x,y);
+			}
+		}else{
+			if(this->isPlayer() != this->board->getPiece(x,y)->isPlayer()){
+				this->setRemoved(true);
+			}
+		}
+	}
+
 	this->position[0] = x;
 	this->position[1] = y;
 }
@@ -200,28 +444,11 @@ bool Morph::Piece::isPlayer(){
 	return this->is_player;
 }
 
-void Morph::Piece::addMove(int x, int y){
-	int* moves = new int[2];
-	moves[0] = x;
-	moves[1] = y;
-	this->moves.push_back(moves);
-}
-
-void Morph::Piece::showMoves(){
-	std::vector<int*>::iterator it;
-
-	for(it=this->moves.begin(); it < this->moves.end(); it++){
-		int x = *(*it);
-		int y = *(*it+1);
-		int *current = this->getPosition();
-		std::cout << this->getChar() << " - " << "Valid Moves: {" << current[0]+x << "," << current[1]+y << "}" << std::endl;
-	}
-
-}
-
 //Piece -- Bishop
-void Morph::Bishop::getMoves(){
+std::vector<int*> Morph::Bishop::getMoves(){
 	int *current = this->getPosition();
+	std::vector<int*> moves;
+
 	int x = 0;
 	int y = 0;
 	x += current[0];
@@ -230,12 +457,18 @@ void Morph::Bishop::getMoves(){
 	while((x > 0 && y > 0)){
 		if(!this->board->isEmpty(current[0]+count,current[1]+count)){
  			if(this->board->capturablePiece(current[0]+count,current[1]+count)){
-				this->addMove(count,count);
+				int* move = new int[2];
+				move[0] = count;
+				move[1] = count;
+				moves.push_back(move);
 			}
 			break;
 		}
 		if(this->validMove(current[0]+count,current[1]+count)){
-			this->addMove(count,count);
+			int* move = new int[2];
+			move[0] = count;
+			move[1] = count;
+			moves.push_back(move);
 		}
 		x--;
 		y--;
@@ -252,12 +485,18 @@ void Morph::Bishop::getMoves(){
 		}
 		if(!this->board->isEmpty(current[0]+count,current[1]+count)){
  			if(this->board->capturablePiece(current[0]+count,current[1]+count)){
-				this->addMove(count,count);
+				int* move = new int[2];
+				move[0] = count;
+				move[1] = count;
+				moves.push_back(move);
 			}
 			break;
 		}
 		if(this->validMove(current[0]+count,current[1]+count)){
-			this->addMove(count,count);
+			int* move = new int[2];
+			move[0] = count;
+			move[1] = count;
+			moves.push_back(move);
 		}
 		x++;
 		y++;
@@ -274,12 +513,18 @@ void Morph::Bishop::getMoves(){
 		}
 		if(!this->board->isEmpty(current[0]+count,current[1]-count)){
  			if(this->board->capturablePiece(current[0]+count,current[1]-count)){
-				this->addMove(count,-1*count);
+				int* move = new int[2];
+				move[0] = count;
+				move[1] = -1*count;
+				moves.push_back(move);
 			}
 			break;
 		}
 		if(this->validMove(current[0]+count,current[1]-count)){
-			this->addMove(count,-1*count);
+			int* move = new int[2];
+			move[0] = count;
+			move[1] = -1*count;
+			moves.push_back(move);
 		}
 		x++;
 		y--;
@@ -294,17 +539,24 @@ void Morph::Bishop::getMoves(){
 
 		if(!this->board->isEmpty(current[0]-count,current[1]+count)){
  			if(this->board->capturablePiece(current[0]-count,current[1]+count)){
-				this->addMove(-1*count,count);
+				int* move = new int[2];
+				move[0] = -1*count;
+				move[1] = count;
+				moves.push_back(move);
 			}
 			break;
 		}
 		if(this->validMove(current[0]-count,current[1]+count)){
-			this->addMove(-1*count,count);
+			int* move = new int[2];
+			move[0] = -1*count;
+			move[1] = count;
+			moves.push_back(move);
 		}
 		x--;
 		y++;
 		count++;
 	}
+	return moves;
 }
 
 bool Morph::Bishop::validMove(int x, int y){
@@ -333,10 +585,6 @@ bool Morph::Bishop::validMove(int x, int y){
 			if((x < i && y < j) || (x > i && y < j)){
 				return this->board->capturablePiece(x,y);
 			}
-
-			if(!this->board->isEmpty(j,i)){
-				return false;
-			}
 		}
 		
 	}
@@ -352,8 +600,10 @@ char Morph::Bishop::getChar(){
 }
 
 //Piece -- Rook
-void Morph::Rook::getMoves(){
+std::vector<int*> Morph::Rook::getMoves(){
 	int *current = this->getPosition();
+	std::vector<int*> moves;
+
 	int j = 0;
 	int i = 0;
 	j += current[0];
@@ -362,14 +612,20 @@ void Morph::Rook::getMoves(){
 
 	while(count > 0){
 		if(this->board->capturablePiece(count,i)){
-			this->addMove(count-j,0);
+			int* move = new int[2];
+			move[0] = count-j;
+			move[1] = 0;
+			moves.push_back(move);
 			break;
 		}
 		if(!this->board->isEmpty(count,i)){
 			break;
 		}
 		if(this->board->isEmpty(count,i)){
-			this->addMove(count-j,0);
+			int* move = new int[2];
+			move[0] = count-j;
+			move[1] = 0;
+			moves.push_back(move);
 		}
 		count--;
 	} 
@@ -377,14 +633,20 @@ void Morph::Rook::getMoves(){
 	count = i-1;
 	while(count > 0){
 		if(this->board->capturablePiece(j,count)){
-			this->addMove(0,count-i);
+			int* move = new int[2];
+			move[0] = 0;
+			move[1] = count-i;
+			moves.push_back(move);
 			break;
 		}
 		if(!this->board->isEmpty(count,i)){
 			break;
 		}
 		if(this->board->isEmpty(j,count)){
-			this->addMove(0,count-i);
+			int* move = new int[2];
+			move[0] = 0;
+			move[1] = count-i;
+			moves.push_back(move);
 		}
 		count--;
 	} 
@@ -392,14 +654,20 @@ void Morph::Rook::getMoves(){
 	count = i+1;
 	while(count < 7){
 		if(this->board->capturablePiece(j,count)){
-			this->addMove(0,count-i);
+			int* move = new int[2];
+			move[0] = 0;
+			move[1] = count-i;
+			moves.push_back(move);
 			break;
 		}
 		if(!this->board->isEmpty(count,i)){
 			break;
 		}
 		if(this->board->isEmpty(j,count)){
-			this->addMove(0,count-i);
+			int* move = new int[2];
+			move[0] = 0;
+			move[1] = count-i;
+			moves.push_back(move);
 		}
 		count++;
 	} 
@@ -407,11 +675,15 @@ void Morph::Rook::getMoves(){
 	count = j+1;
 	while(count < 9){
 		if(this->board->capturablePiece(count,i)){
-			this->addMove(count-j,0);
+			int* move = new int[2];
+			move[0] = count-j;
+			move[1] = 0;
+			moves.push_back(move);
 			break;
 		}
 		count++;
 	} 
+	return moves;
 }
 
 bool Morph::Rook::validMove(int x, int y){
@@ -421,21 +693,25 @@ bool Morph::Rook::validMove(int x, int y){
 	if(x != i && y != j){
 		return false;
 	}
+
+	Morph::Piece *cur = NULL;
+	cur = this->board->getPiece(x,y);
+
 	if(x < i){
 		while(x != i){
 			i--;
-			if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer()){
+			if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer() && x != i && y != j){
 				return false;
 			}
 		}
-		if(this->board->getPiece(j,i)->isPlayer()){
+		if(this->board->getPiece(j,i)->isPlayer() && x != i && y != j){
 			return false;
 		}
 	}
 	if(x > i){
 		while(x != i){
 			i++;
-			if(!this->board->isEmpty(j,i)){
+			if(!this->board->isEmpty(j,i) && x != i && y != j){
 				return false;
 			}
 		}
@@ -443,18 +719,18 @@ bool Morph::Rook::validMove(int x, int y){
 	if(y < j){
 		while(y != j){
 			j--;
-			if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer()){
+			if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer() && x != i && y != j){
 				return false;
 			}
 		}
-		if(this->board->getPiece(j,i)->isPlayer()){
+		if(this->board->getPiece(j,i)->isPlayer() && x != i && y != j){
 			return false;
 		}
 	}
 	if(y > j){
 		while(y != j){
 			j++;
-			if(!this->board->isEmpty(j,i)){
+			if(!this->board->isEmpty(j,i) && x != i && y != j){
 				return false;
 			}
 		}
@@ -471,39 +747,62 @@ char Morph::Rook::getChar(){
 }
 
 //Piece -- Knight
-void Morph::Knight::getMoves(){
+std::vector<int*> Morph::Knight::getMoves(){
 	int *current = this->getPosition();
+	std::vector<int*> moves;
 
 	if(this->validMove(current[0]-2,current[1]+1)){
-		this->addMove(-2,1);
+		int* move = new int[2];
+		move[0] = -2;
+		move[1] = 1;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]-2,current[1]-1)){
-		this->addMove(-2,-1);
+		int* move = new int[2];
+		move[0] = -2;
+		move[1] = -1;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]-1,current[1]-2)){
-		this->addMove(-1,-2);
+		int* move = new int[2];
+		move[0] = -1;
+		move[1] = -2;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]-1,current[1]+2)){
-		this->addMove(-1,2);
+		int* move = new int[2];
+		move[0] = -1;
+		move[1] = 2;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]+1,current[1]+2) && this->board->capturablePiece(current[0]+1,current[1]+2)){
-		this->addMove(1,2);
+		int* move = new int[2];
+		move[0] = 1;
+		move[1] = 2;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]+1,current[1]-2) && this->board->capturablePiece(current[0]+1,current[1]-2)){
-		this->addMove(1,-2);
+		int* move = new int[2];
+		move[0] = 1;
+		move[1] = -2;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]+2,current[1]-1) && this->board->capturablePiece(current[0]+2,current[1]-1)){
-		this->addMove(2,-1);
+		int* move = new int[2];
+		move[0] = 2;
+		move[1] = -1;
+		moves.push_back(move);
 	}
 	if(this->validMove(current[0]+2,current[1]+1) && this->board->capturablePiece(current[0]+2,current[1]+1)){
-		this->addMove(2,1);
+		int* move = new int[2];
+		move[0] = 2;
+		move[1] = 1;
+		moves.push_back(move);
 	}
+	return moves;
 }
 bool Morph::Knight::validMove(int x, int y){
 	if(this->isPlayer()){
-		if(!this->board->isEmpty(y,x)){
-			return false;
-		}
 		int *current = this->getPosition();
 		int movex = current[1] -  x;
 		int movey = current[0] - y;
@@ -536,19 +835,72 @@ char Morph::Knight::getChar(){
 	return 'N';
 }
 //Piece -- Pawn
-void Morph::Pawn::getMoves(){
+std::vector<int*> Morph::Pawn::getMoves(){
+	std::vector<int*> moves;
 	if(!this->isPlayer()){
-		this->addMove(-1,0);
+		int* move = new int[2];
+		move[0] = -1;
+		move[1] = 0;
+		moves.push_back(move);
 	}
+	return moves;
 }
 bool Morph::Pawn::validMove(int x, int y){
-	if(!this->board->isEmpty(y,x)){
-		return false;
-	}
 	int *current = this->getPosition();
-	if(x != current[1]){
-		return false;
+
+	int corner_1[2],corner_2[2],corner_3[2],corner_4[2];
+
+	corner_1[0] = current[0] + 1;
+	corner_1[1] = current[1] + 1;
+
+	corner_2[0] = current[0] - 1;
+	corner_2[1] = current[1] + 1;
+
+	corner_3[0] = current[0] + 1;
+	corner_3[1] = current[1] - 1;
+
+	corner_4[0] = current[0] - 1;
+	corner_4[1] = current[1] - 1;
+
+	Morph::Piece *cur = NULL;
+	cur = this->board->getPiece(x,y);
+
+	if(cur != NULL){
+		if(x == corner_1[0] && y == corner_1[1]){
+			if(cur->isPlayer() == this->isPlayer()){
+				return false;
+			}
+		}
+		if(x == corner_2[0] && y == corner_2[1]){
+			if(cur->isPlayer() == this->isPlayer()){
+				return false;
+			}
+		}
+		if(x == corner_3[0] && y == corner_3[1]){
+			if(cur->isPlayer() == this->isPlayer()){
+				return false;
+			}
+		}
+		if(x == corner_4[0] && y == corner_4[1]){
+			if(cur->isPlayer() == this->isPlayer()){
+				return false;
+			}
+		}
+	}else{
+		if(x == corner_1[0] && y == corner_1[1]){
+			return false;
+		}
+		if(x == corner_2[0] && y == corner_2[1]){
+			return false;
+		}
+		if(x == corner_3[0] && y == corner_3[1]){
+			return false;
+		}
+		if(x == corner_4[0] && y == corner_4[1]){
+			return false;
+		}
 	}
+
 	if(this->isPlayer()){
 		if(y - current[0] > 1){
 			return false;
@@ -574,13 +926,26 @@ char Morph::Pawn::getChar(){
 }
 
 //Piece -- King
-void Morph::King::getMoves(){
+std::vector<int*> Morph::King::getMoves(){
+	std::vector<int*> moves;
+	int *current = this->getPosition();
 	if(!this->isPlayer()){
-		int *current = this->getPosition();
-		if(this->validMove(current[0],current[1]+1)){
-			this->addMove(0,1);
+		if(current[1] + 1 < 7){
+			int* move = new int[2];
+			move[0] = 0;
+			move[1] = 1;
+			moves.push_back(move);
+		}
+	}else{
+		if(current[1] + 1 > 0 && current[1]+1 < 7){
+			int* move = new int[2];
+			move[0] = 0;
+			move[1] = -1;
+			moves.push_back(move);
 		}
 	}
+
+	return moves;
 }
 
 bool Morph::King::validMove(int x, int y){
