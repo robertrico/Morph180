@@ -32,22 +32,38 @@ int main(int argc, char** argv){
 
 	board->addPiece(k1);
 	board->addPiece(k2);
+
 	board->addPiece(n1);
 	board->addPiece(n2);
 	board->addPiece(n3);
 	board->addPiece(n4);
+	n1->init(7,1,false);
+	n2->init(7,6,false);
+	n3->init(2,1,true);
+	n4->init(2,6,true);
+
 	board->addPiece(p1);
 	board->addPiece(p2);
 	board->addPiece(p3);
 	board->addPiece(p4);
+
 	board->addPiece(b1);
 	board->addPiece(b2);
 	board->addPiece(b3);
 	board->addPiece(b4);
+	b1->init(7,2,false);
+	b2->init(7,5,false);
+	b3->init(2,2,true);
+	b4->init(2,2,true);
+
 	board->addPiece(r1);
 	board->addPiece(r2);
 	board->addPiece(r3);
 	board->addPiece(r4);
+	r1->init(7,4,false);
+	r2->init(7,3,false);
+	r3->init(2,3,true);
+	r4->init(2,4,true);
 
 	std::cout << std::endl << std::endl;
 

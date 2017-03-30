@@ -18,8 +18,8 @@ INC = -I include
 #LDLIBS += -pthread
 
 #Uncomment for Dev Optimization Compilation
-CXXFLAGS += -O3
-LDLIBS += -O3
+#CXXFLAGS += -O3
+#LDLIBS += -O3
 
 all: $(TARGET)
 

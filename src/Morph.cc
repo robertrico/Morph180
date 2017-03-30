@@ -149,7 +149,7 @@ void Morph::Board::execute(){
 
 		(*mit).piece->freeze();
 		(*mit).piece->setPosition(position[0]+(*mit).moves[0],position[1]+(*mit).moves[1],true);
-		double score = this->min(0);
+		double score = this->min(0,-9999);
 		if(score > best_score){
 			moved = (*mit).piece;
 			best_move[0] = position[0];
@@ -180,7 +180,7 @@ void Morph::Board::execute(){
 	delete[] best_move;
 }
 
-double Morph::Board::max(int depth){
+double Morph::Board::max(int depth, int alpha){
 	if(endEval()){
 		return -9999912;
 	}else if(depth == MAXDEPTH){
@@ -203,13 +203,14 @@ double Morph::Board::max(int depth){
 
 			(*mit).piece->freeze();
 			(*mit).piece->setPosition(position[0]+(*mit).moves[0],position[1]+(*mit).moves[1],true);
-			double score = this->min(depth+1);
+			double score = this->min(depth+1,alpha);
 			if(score > best_score){
 				best_move[0] = position[0];
 				best_move[1] = position[1];
 				best_score = score;
 			}
 			(*mit).piece->revert();
+			if(best_score > alpha) return best_score;
 		}
 
 		delete[] best_move;
@@ -217,7 +218,7 @@ double Morph::Board::max(int depth){
 	}
 }
 
-double Morph::Board::min(int depth){
+double Morph::Board::min(int depth, int beta){
 	if(endEval()){
 		return 9999912;
 	}else if(depth == MAXDEPTH){
@@ -240,13 +241,14 @@ double Morph::Board::min(int depth){
 
 			(*mit).piece->freeze();
 			(*mit).piece->setPosition(position[0]+(*mit).moves[0],position[1]+(*mit).moves[1],true);
-			double score = this->max(depth+1);
+			double score = this->max(depth+1,best_score);
 			if(score < best_score){
 				best_move[0] = position[0];
 				best_move[1] = position[1];
 				best_score = score;
 			}
 			(*mit).piece->revert();
+			if(best_score < beta) return best_score;
 		}
 
 		delete[] best_move;
@@ -279,7 +281,6 @@ int Morph::Board::eval(){
 	int aiRookCount = 0;
 	int rookCount = 0;
 	int playerCount = 0;
-	int score = 0;
 
 	for(it=this->active_pieces.begin(); it < this->active_pieces.end(); it++){
 		if((*it)->isPlayer() && !(*it)->isRemoved()){
@@ -405,6 +406,10 @@ void Morph::Piece::revert(){
 		delete[] last;
 		this->states.pop_back();
 	}
+	if(this->morphable){
+		this->morph();
+		this->morph();
+	}
 }
 
 void Morph::Piece::setRemoved(bool rem){
@@ -413,6 +418,11 @@ void Morph::Piece::setRemoved(bool rem){
 
 bool Morph::Piece::isRemoved(){
 	return this->is_removed;
+}
+
+void Morph::Piece::setPosition(int x, int y){
+	this->position[0] = x;
+	this->position[1] = y;
 }
 
 void Morph::Piece::setPosition(int x, int y,bool min_max_move){
@@ -434,6 +444,7 @@ void Morph::Piece::setPosition(int x, int y,bool min_max_move){
 
 	this->position[0] = x;
 	this->position[1] = y;
+	this->morph();
 }
 
 int* Morph::Piece::getPosition(){
@@ -445,7 +456,123 @@ bool Morph::Piece::isPlayer(){
 }
 
 //Piece -- Bishop
+
+void Morph::Rook::init(int x , int y, bool is_player){
+	this->current_state = this;
+
+	this->morph_states.current = 0;
+
+	this->morph_states.rook = this;
+	this->morph_states.knight = new Morph::Knight(x,y,is_player);
+	this->morph_states.bishop = new Morph::Bishop(x,y,is_player);
+
+	this->morph_states.bishop->board = this->board;
+	this->morph_states.knight->board = this->board;
+	this->morph_states.rook->board = this->board;
+
+	this->morph_states.bishop->child_piece = true;
+	this->morph_states.knight->child_piece = true;
+}
+
+void Morph::Rook::morph(){
+	int* current = this->getPosition();
+	this->morph_states.bishop->setPosition(current[0] ,current[1]);
+	this->morph_states.knight->setPosition(current[0] ,current[1]);
+	this->morph_states.rook->setPosition(current[0] ,current[1]);
+
+	
+	this->morph_states.current = (this->morph_states.current+1) % 2;
+	switch(this->morph_states.current){
+		case 1:
+			this->current_state = this->morph_states.knight;
+			break;
+		case 2:
+			this->current_state = this->morph_states.bishop;
+			break;
+		default:
+			this->current_state = this->morph_states.rook;
+			break;
+	}
+}
+
+void Morph::Bishop::init(int x , int y, bool is_player){
+	this->current_state = this;
+	this->morph_states.current = 0;
+
+	this->morph_states.bishop = this;
+	this->morph_states.knight = new Morph::Knight(x,y,is_player);
+	this->morph_states.rook = new Morph::Rook(x,y,is_player);
+
+	this->morph_states.bishop->board = this->board;
+	this->morph_states.knight->board = this->board;
+	this->morph_states.rook->board = this->board;
+
+	this->morph_states.rook->child_piece = true;
+	this->morph_states.knight->child_piece = true;
+}
+
+void Morph::Bishop::morph(){
+	int* current = this->getPosition();
+	this->morph_states.bishop->setPosition(current[0] ,current[1]);
+	this->morph_states.knight->setPosition(current[0] ,current[1]);
+	this->morph_states.rook->setPosition(current[0] ,current[1]);
+
+	
+	this->morph_states.current = (this->morph_states.current+1) % 2;
+	switch(this->morph_states.current){
+		case 1:
+			this->current_state = this->morph_states.knight;
+			break;
+		case 0:
+			this->current_state = this->morph_states.rook;
+			break;
+		default:
+			this->current_state = this->morph_states.bishop;
+			break;
+	}
+}
+
+void Morph::Knight::init(int x , int y, bool is_player){
+	this->current_state = this;
+	this->morph_states.current = 0;
+
+	this->morph_states.knight = this;
+	this->morph_states.bishop = new Morph::Bishop(x,y,is_player);
+	this->morph_states.rook = new Morph::Rook(x,y,is_player);
+
+	this->morph_states.bishop->board = this->board;
+	this->morph_states.knight->board = this->board;
+	this->morph_states.rook->board = this->board;
+
+	this->morph_states.rook->child_piece = true;
+	this->morph_states.bishop->child_piece = true;
+}
+
+void Morph::Knight::morph(){
+	int* current = this->getPosition();
+	this->morph_states.bishop->setPosition(current[0] ,current[1]);
+	this->morph_states.knight->setPosition(current[0] ,current[1]);
+	this->morph_states.rook->setPosition(current[0] ,current[1]);
+	
+	this->morph_states.current = (this->morph_states.current+1) % 2;
+
+	switch(this->morph_states.current){
+		case 2:
+			this->current_state = this->morph_states.bishop;
+			break;
+		case 1:
+			this->current_state = this->morph_states.rook;
+			break;
+		default:
+			this->current_state = this->morph_states.knight;
+			break;
+	}
+}
+
 std::vector<int*> Morph::Bishop::getMoves(){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->getMoves();
+	}
 	int *current = this->getPosition();
 	std::vector<int*> moves;
 
@@ -560,6 +687,10 @@ std::vector<int*> Morph::Bishop::getMoves(){
 }
 
 bool Morph::Bishop::validMove(int x, int y){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->validMove(x,y);
+	}
+
 	if(!this->isPlayer()){
 		if(x < 1 || y < 1){
 			return false;
@@ -593,7 +724,9 @@ bool Morph::Bishop::validMove(int x, int y){
 }
 
 char Morph::Bishop::getChar(){
-	if(isPlayer()){
+	if(this->current_state != this){
+		return this->current_state->getChar();
+	}else if(isPlayer()){
 		return 'b';
 	}
 	return 'B';
@@ -601,6 +734,9 @@ char Morph::Bishop::getChar(){
 
 //Piece -- Rook
 std::vector<int*> Morph::Rook::getMoves(){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->getMoves();
+	}
 	int *current = this->getPosition();
 	std::vector<int*> moves;
 
@@ -687,15 +823,15 @@ std::vector<int*> Morph::Rook::getMoves(){
 }
 
 bool Morph::Rook::validMove(int x, int y){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->validMove(x,y);
+	}
 	int* current = this->getPosition();
 	int i = current[1];
 	int j = current[0];
 	if(x != i && y != j){
 		return false;
 	}
-
-	Morph::Piece *cur = NULL;
-	cur = this->board->getPiece(x,y);
 
 	if(x < i){
 		while(x != i){
@@ -704,7 +840,7 @@ bool Morph::Rook::validMove(int x, int y){
 				return false;
 			}
 		}
-		if(this->board->getPiece(j,i)->isPlayer() && x != i && y != j){
+		if(!this->board->isEmpty(j,i) && this->board->getPiece(j,i)->isPlayer() && x != i && y != j){
 			return false;
 		}
 	}
@@ -740,6 +876,9 @@ bool Morph::Rook::validMove(int x, int y){
 }
 
 char Morph::Rook::getChar(){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->getChar();
+	}
 	if(isPlayer()){
 		return 'r';
 	}
@@ -748,6 +887,9 @@ char Morph::Rook::getChar(){
 
 //Piece -- Knight
 std::vector<int*> Morph::Knight::getMoves(){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->getMoves();
+	}
 	int *current = this->getPosition();
 	std::vector<int*> moves;
 
@@ -802,6 +944,9 @@ std::vector<int*> Morph::Knight::getMoves(){
 	return moves;
 }
 bool Morph::Knight::validMove(int x, int y){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->validMove(x,y);
+	}
 	if(this->isPlayer()){
 		int *current = this->getPosition();
 		int movex = current[1] -  x;
@@ -829,12 +974,18 @@ bool Morph::Knight::validMove(int x, int y){
 	}
 }
 char Morph::Knight::getChar(){
+	if(!this->child_piece && this->current_state != this){
+		return this->current_state->getChar();
+	}
 	if(this->isPlayer()){
 		return 'n';
 	}
 	return 'N';
 }
 //Piece -- Pawn
+void Morph::Pawn::morph(){
+	return;
+}
 std::vector<int*> Morph::Pawn::getMoves(){
 	std::vector<int*> moves;
 	if(!this->isPlayer()){
@@ -926,6 +1077,9 @@ char Morph::Pawn::getChar(){
 }
 
 //Piece -- King
+void Morph::King::morph(){
+	return;
+}
 std::vector<int*> Morph::King::getMoves(){
 	std::vector<int*> moves;
 	int *current = this->getPosition();
@@ -949,9 +1103,6 @@ std::vector<int*> Morph::King::getMoves(){
 }
 
 bool Morph::King::validMove(int x, int y){
-	if(!this->board->isEmpty(y,x)){
-		return false;
-	}
 	int *current = this->getPosition();
 
 	if(this->isPlayer() && (y > 1 || current[1] - x > 1 || x > current[1])){
